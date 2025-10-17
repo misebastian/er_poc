@@ -1,98 +1,416 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-import json
 import random
 
-# Configuración de página
+# Page configuration
 st.set_page_config(page_title="Entity Resolution Match Labelling", layout="wide")
 
-# Función para crear dataset de ejemplo
+# Custom CSS for light theme matching the image
+st.markdown("""
+<style>
+    /* Main background */
+    .stApp {
+        background-color: #f5f5f7;
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e0e0e0;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        border-radius: 4px;
+        font-weight: 500;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    /* Cards/Containers */
+    [data-testid="stVerticalBlock"] > div {
+        background-color: #ffffff;
+        border-radius: 6px;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #ffffff;
+        padding: 8px;
+        border-radius: 6px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent;
+        border-radius: 4px;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #f0f0f0;
+        color: #000;
+    }
+    
+    /* Text input */
+    .stTextInput > div > div > input {
+        border-radius: 4px;
+        border: 1px solid #d0d0d0;
+    }
+    
+    /* Priority badge */
+    .priority-high {
+        background-color: #fee;
+        color: #c00;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .priority-medium {
+        background-color: #fff4e0;
+        color: #d97706;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .priority-low {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Sample company data with NAICS, SIC, website, description
 def create_sample_dataset():
-    suppliers = [
-        # LinkedIn variants
-        ("LinkedIn Australia Pty Ltd", "LinkedIn", 0.92, "High"),
-        ("LinkedIn Sales Navigator", "LinkedIn", 0.88, "High"),
-        ("LinkedIn Corporation", "LinkedIn", 0.95, "High"),
-        ("Linkedin Ireland Unlimited", "LinkedIn", 0.89, "High"),
-        ("LINKEDIN TALENT SOLUTIONS", "LinkedIn", 0.91, "High"),
-        
-        # Microsoft variants
-        ("Microsoft Corporation", "Microsoft", 0.98, "High"),
-        ("Microsoft Ireland Operations Ltd", "Microsoft", 0.94, "High"),
-        ("MS Azure Services", "Microsoft", 0.85, "Medium"),
-        ("Microsoft 365 Business", "Microsoft", 0.87, "High"),
-        ("MSFT Cloud Solutions", "Microsoft", 0.82, "Medium"),
-        
-        # Google variants
-        ("Google LLC", "Google", 0.97, "High"),
-        ("Google Cloud EMEA", "Google", 0.93, "High"),
-        ("Google Workspace", "Google", 0.90, "High"),
-        ("YouTube LLC", "Google", 0.78, "Medium"),
-        ("Google Ireland Limited", "Google", 0.95, "High"),
-        
-        # Salesforce variants
-        ("Salesforce.com Inc", "Salesforce", 0.96, "High"),
-        ("Salesforce EMEA Ltd", "Salesforce", 0.92, "High"),
-        ("SFDC Ireland", "Salesforce", 0.84, "Medium"),
-        ("Tableau Software LLC", "Salesforce", 0.72, "Medium"),
-        ("Slack Technologies Inc", "Salesforce", 0.68, "Low"),
-        
-        # AWS variants
-        ("Amazon Web Services Inc", "Amazon Web Services", 0.95, "High"),
-        ("AWS EMEA SARL", "Amazon Web Services", 0.91, "High"),
-        ("Amazon Web Srvcs Ireland", "Amazon Web Services", 0.88, "High"),
-        
-        # SAP variants
-        ("SAP SE", "SAP", 0.98, "High"),
-        ("SAP America Inc", "SAP", 0.94, "High"),
-        ("SAP Labs LLC", "SAP", 0.86, "Medium"),
-        ("SAP Ariba", "SAP", 0.79, "Medium"),
-        
-        # Oracle variants
-        ("Oracle Corporation", "Oracle", 0.97, "High"),
-        ("Oracle EMEA Limited", "Oracle", 0.93, "High"),
-        ("Oracle Cloud Infrastructure", "Oracle", 0.88, "High"),
-        ("NetSuite Inc", "Oracle", 0.65, "Low"),
-        
-        # Adobe variants
-        ("Adobe Inc", "Adobe", 0.98, "High"),
-        ("Adobe Systems Software", "Adobe", 0.94, "High"),
-        ("Adobe Ireland", "Adobe", 0.92, "High"),
-        
-        # Zoom variants
-        ("Zoom Video Communications", "Zoom", 0.96, "High"),
-        ("Zoom.us", "Zoom", 0.91, "High"),
-        ("Zoom Meetings", "Zoom", 0.87, "High"),
-        
-        # Casos ambiguos / difíciles
-        ("Meta Platforms Ireland", "Meta", 0.89, "Medium"),
-        ("Facebook Ireland Ltd", "Meta", 0.83, "Medium"),
-        ("Apple Distribution International", "Apple", 0.86, "Medium"),
-        ("Atlassian Pty Ltd", "Atlassian", 0.94, "High"),
-        ("Dropbox International Unlimited", "Dropbox", 0.91, "High"),
+    companies_data = [
+        {
+            "raw": "LinkedIn Australia Pty Ltd",
+            "canonical": "LinkedIn",
+            "score": 0.92,
+            "priority": "High",
+            "naics_raw": "518210",
+            "naics_canonical": "518210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "linkedin.com.au",
+            "website_canonical": "linkedin.com",
+            "desc_raw": "Professional networking platform - Australia",
+            "desc_canonical": "Professional networking and career development platform"
+        },
+        {
+            "raw": "LinkedIn Sales Navigator",
+            "canonical": "LinkedIn",
+            "score": 0.88,
+            "priority": "High",
+            "naics_raw": "518210",
+            "naics_canonical": "518210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "business.linkedin.com/sales-solutions",
+            "website_canonical": "linkedin.com",
+            "desc_raw": "Sales intelligence and prospecting tool",
+            "desc_canonical": "Professional networking and career development platform"
+        },
+        {
+            "raw": "LinkedIn Corporation",
+            "canonical": "LinkedIn",
+            "score": 0.95,
+            "priority": "High",
+            "naics_raw": "518210",
+            "naics_canonical": "518210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "linkedin.com",
+            "website_canonical": "linkedin.com",
+            "desc_raw": "Professional social networking service",
+            "desc_canonical": "Professional networking and career development platform"
+        },
+        {
+            "raw": "Microsoft Corporation",
+            "canonical": "Microsoft",
+            "score": 0.98,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "microsoft.com",
+            "website_canonical": "microsoft.com",
+            "desc_raw": "Software and cloud computing services",
+            "desc_canonical": "Technology corporation developing software, hardware, and cloud services"
+        },
+        {
+            "raw": "Microsoft Ireland Operations Ltd",
+            "canonical": "Microsoft",
+            "score": 0.94,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "microsoft.com/ie",
+            "website_canonical": "microsoft.com",
+            "desc_raw": "Microsoft European operations subsidiary",
+            "desc_canonical": "Technology corporation developing software, hardware, and cloud services"
+        },
+        {
+            "raw": "MS Azure Services",
+            "canonical": "Microsoft",
+            "score": 0.85,
+            "priority": "Medium",
+            "naics_raw": "518210",
+            "naics_canonical": "511210",
+            "sic_raw": "7374",
+            "sic_canonical": "7372",
+            "website_raw": "azure.microsoft.com",
+            "website_canonical": "microsoft.com",
+            "desc_raw": "Cloud computing platform and services",
+            "desc_canonical": "Technology corporation developing software, hardware, and cloud services"
+        },
+        {
+            "raw": "Google LLC",
+            "canonical": "Google",
+            "score": 0.97,
+            "priority": "High",
+            "naics_raw": "519130",
+            "naics_canonical": "519130",
+            "sic_raw": "7375",
+            "sic_canonical": "7375",
+            "website_raw": "google.com",
+            "website_canonical": "google.com",
+            "desc_raw": "Internet search and online advertising",
+            "desc_canonical": "Multinational technology company specializing in Internet services"
+        },
+        {
+            "raw": "Google Cloud EMEA",
+            "canonical": "Google",
+            "score": 0.93,
+            "priority": "High",
+            "naics_raw": "518210",
+            "naics_canonical": "519130",
+            "sic_raw": "7374",
+            "sic_canonical": "7375",
+            "website_raw": "cloud.google.com",
+            "website_canonical": "google.com",
+            "desc_raw": "Cloud computing services - EMEA region",
+            "desc_canonical": "Multinational technology company specializing in Internet services"
+        },
+        {
+            "raw": "YouTube LLC",
+            "canonical": "Google",
+            "score": 0.78,
+            "priority": "Medium",
+            "naics_raw": "519130",
+            "naics_canonical": "519130",
+            "sic_raw": "7375",
+            "sic_canonical": "7375",
+            "website_raw": "youtube.com",
+            "website_canonical": "google.com",
+            "desc_raw": "Video sharing and social media platform",
+            "desc_canonical": "Multinational technology company specializing in Internet services"
+        },
+        {
+            "raw": "Salesforce.com Inc",
+            "canonical": "Salesforce",
+            "score": 0.96,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "salesforce.com",
+            "website_canonical": "salesforce.com",
+            "desc_raw": "Cloud-based CRM software and applications",
+            "desc_canonical": "Customer relationship management (CRM) software and cloud computing"
+        },
+        {
+            "raw": "Salesforce EMEA Ltd",
+            "canonical": "Salesforce",
+            "score": 0.92,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "salesforce.com/eu",
+            "website_canonical": "salesforce.com",
+            "desc_raw": "Salesforce European operations",
+            "desc_canonical": "Customer relationship management (CRM) software and cloud computing"
+        },
+        {
+            "raw": "Tableau Software LLC",
+            "canonical": "Salesforce",
+            "score": 0.72,
+            "priority": "Medium",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "tableau.com",
+            "website_canonical": "salesforce.com",
+            "desc_raw": "Business intelligence and analytics software",
+            "desc_canonical": "Customer relationship management (CRM) software and cloud computing"
+        },
+        {
+            "raw": "Amazon Web Services Inc",
+            "canonical": "Amazon Web Services",
+            "score": 0.95,
+            "priority": "High",
+            "naics_raw": "518210",
+            "naics_canonical": "518210",
+            "sic_raw": "7374",
+            "sic_canonical": "7374",
+            "website_raw": "aws.amazon.com",
+            "website_canonical": "aws.amazon.com",
+            "desc_raw": "Cloud computing and web hosting services",
+            "desc_canonical": "On-demand cloud computing platforms and APIs"
+        },
+        {
+            "raw": "AWS EMEA SARL",
+            "canonical": "Amazon Web Services",
+            "score": 0.91,
+            "priority": "High",
+            "naics_raw": "518210",
+            "naics_canonical": "518210",
+            "sic_raw": "7374",
+            "sic_canonical": "7374",
+            "website_raw": "aws.amazon.com/emea",
+            "website_canonical": "aws.amazon.com",
+            "desc_raw": "AWS European operations",
+            "desc_canonical": "On-demand cloud computing platforms and APIs"
+        },
+        {
+            "raw": "SAP SE",
+            "canonical": "SAP",
+            "score": 0.98,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "sap.com",
+            "website_canonical": "sap.com",
+            "desc_raw": "Enterprise application software",
+            "desc_canonical": "Enterprise resource planning (ERP) software and solutions"
+        },
+        {
+            "raw": "SAP America Inc",
+            "canonical": "SAP",
+            "score": 0.94,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "sap.com/usa",
+            "website_canonical": "sap.com",
+            "desc_raw": "SAP North America operations",
+            "desc_canonical": "Enterprise resource planning (ERP) software and solutions"
+        },
+        {
+            "raw": "Oracle Corporation",
+            "canonical": "Oracle",
+            "score": 0.97,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "oracle.com",
+            "website_canonical": "oracle.com",
+            "desc_raw": "Database and cloud computing solutions",
+            "desc_canonical": "Computer technology corporation specializing in database software"
+        },
+        {
+            "raw": "Oracle EMEA Limited",
+            "canonical": "Oracle",
+            "score": 0.93,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "oracle.com/emea",
+            "website_canonical": "oracle.com",
+            "desc_raw": "Oracle European operations",
+            "desc_canonical": "Computer technology corporation specializing in database software"
+        },
+        {
+            "raw": "Adobe Inc",
+            "canonical": "Adobe",
+            "score": 0.98,
+            "priority": "High",
+            "naics_raw": "511210",
+            "naics_canonical": "511210",
+            "sic_raw": "7372",
+            "sic_canonical": "7372",
+            "website_raw": "adobe.com",
+            "website_canonical": "adobe.com",
+            "desc_raw": "Creative software and digital marketing solutions",
+            "desc_canonical": "Computer software company focused on creative and multimedia products"
+        },
+        {
+            "raw": "Zoom Video Communications",
+            "canonical": "Zoom",
+            "score": 0.96,
+            "priority": "High",
+            "naics_raw": "517311",
+            "naics_canonical": "517311",
+            "sic_raw": "4899",
+            "sic_canonical": "4899",
+            "website_raw": "zoom.us",
+            "website_canonical": "zoom.us",
+            "desc_raw": "Video conferencing and communications platform",
+            "desc_canonical": "Video telephony and online chat services"
+        },
     ]
     
     data = []
-    for i, (raw, canonical, score, priority) in enumerate(suppliers, 1):
+    for i, company in enumerate(companies_data, 1):
         data.append({
             'id': i,
-            'RAW_SUPPLIER': raw,
-            'CANONICAL_NAME': canonical,
-            'match_score': score,
-            'match_priority': priority,
+            'RAW_SUPPLIER': company['raw'],
+            'CANONICAL_NAME': company['canonical'],
+            'match_score': company['score'],
+            'match_priority': company['priority'],
+            'naics_code_raw': company['naics_raw'],
+            'naics_code_canonical': company['naics_canonical'],
+            'sic_code_raw': company['sic_raw'],
+            'sic_code_canonical': company['sic_canonical'],
+            'website_url_raw': company['website_raw'],
+            'website_url_canonical': company['website_canonical'],
+            'description_raw': company['desc_raw'],
+            'description_canonical': company['desc_canonical'],
             'HITL_Decision': None,
             'last_decision': None,
             'last_decision_by': None,
             'last_decision_date': None,
             'review_status': 'Unreviewed',
             'reviewed_at': None,
-            'confidence_level': round(score * 100)
+            'confidence_level': round(company['score'] * 100)
         })
     
     return pd.DataFrame(data)
 
-# Inicializar session state
+# Initialize session state
 if 'matches_df' not in st.session_state:
     st.session_state.matches_df = create_sample_dataset()
 
@@ -105,7 +423,7 @@ if 'change_log' not in st.session_state:
 if 'user_name' not in st.session_state:
     st.session_state.user_name = "Current User"
 
-# Función para registrar cambios
+# Function to log changes
 def log_change(match_id, raw_supplier, canonical_name, old_decision, new_decision, user):
     log_entry = {
         'timestamp': datetime.now(),
@@ -118,7 +436,7 @@ def log_change(match_id, raw_supplier, canonical_name, old_decision, new_decisio
     }
     st.session_state.change_log.append(log_entry)
 
-# Función para actualizar decisión
+# Function to update decision
 def update_decision(idx, decision, current_match):
     old_decision = st.session_state.matches_df.at[idx, 'HITL_Decision']
     
@@ -127,7 +445,7 @@ def update_decision(idx, decision, current_match):
     st.session_state.matches_df.at[idx, 'review_status'] = decision
     st.session_state.matches_df.at[idx, 'last_decision_by'] = st.session_state.user_name
     st.session_state.matches_df.at[idx, 'last_decision_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    st.session_state.matches_df.at[idx, 'reviewed_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    st.session_state.matches_df.at[idx, 'reviewed_at'] = datetime.now().strftime("%a, %b %d, %Y, %I:%M %p")
     
     log_change(
         current_match['id'],
@@ -138,16 +456,16 @@ def update_decision(idx, decision, current_match):
         st.session_state.user_name
     )
 
-# Título principal
-st.title("🔄 [ERP Migration] Entity Resolution Match Labelling")
+# Main title
+st.markdown("### [ERP Migration] Entity Resolution Match Labelling")
 
-# Configuración de usuario
+# User settings in sidebar
 with st.sidebar:
-    st.header("👤 User Settings")
+    st.markdown("#### 👤 User Settings")
     st.session_state.user_name = st.text_input("Your Name", value=st.session_state.user_name)
     st.divider()
 
-# Tabs principales
+# Main tabs
 tab1, tab2, tab3, tab4 = st.tabs([
     "🔍 Individual Match Review", 
     "📊 Dataset View & Query", 
@@ -158,36 +476,32 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     df = st.session_state.matches_df
     
-    # Métricas en la parte superior
-    col1, col2, col3, col4, col5 = st.columns(5)
+    # Top metrics
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         unreviewed = len(df[df['review_status'] == 'Unreviewed'])
-        st.metric("Unreviewed", unreviewed)
+        st.metric("Unreviewed Matches", unreviewed)
     with col2:
         confirmed = len(df[df['HITL_Decision'] == 'Confirmed'])
-        st.metric("Confirmed", confirmed)
+        st.metric("Confirmed Matches", confirmed)
     with col3:
         rejected = len(df[df['HITL_Decision'] == 'Rejected'])
-        st.metric("Rejected", rejected)
+        st.metric("Rejected Matches", rejected)
     with col4:
         flagged = len(df[df['HITL_Decision'] == 'Flagged'])
-        st.metric("Flagged", flagged)
-    with col5:
-        total = len(df)
-        progress = ((confirmed + rejected + flagged) / total * 100) if total > 0 else 0
-        st.metric("Progress", f"{progress:.1f}%")
+        st.metric("Flagged Matches", flagged)
     
     st.divider()
     
-    # Sidebar para filtros
+    # Sidebar filters
     with st.sidebar:
-        st.header("Match Selection")
-        st.subheader("🔍 Filter Matches")
+        st.markdown("#### Match Selection")
+        st.markdown("##### 🔍 Filter Matches")
         
-        # Búsqueda por texto
+        # Text search
         search_text = st.text_input("🔎 Search Supplier/Canonical", "")
         
-        # Filtros
+        # Filters
         priority_filter = st.multiselect(
             "Match Priority",
             options=['High', 'Medium', 'Low'],
@@ -208,7 +522,7 @@ with tab1:
             step=0.01
         )
         
-        # Aplicar filtros
+        # Apply filters
         filtered_df = df[
             (df['match_priority'].isin(priority_filter)) &
             (df['review_status'].isin(status_filter)) &
@@ -216,7 +530,7 @@ with tab1:
             (df['match_score'] <= score_filter[1])
         ]
         
-        # Filtro de búsqueda
+        # Search filter
         if search_text:
             filtered_df = filtered_df[
                 filtered_df['RAW_SUPPLIER'].str.contains(search_text, case=False, na=False) |
@@ -226,30 +540,31 @@ with tab1:
         filtered_df = filtered_df.reset_index(drop=True)
         
         st.divider()
-        st.subheader(f"Matches ({len(filtered_df)})")
+        st.markdown(f"##### Matches ({len(filtered_df)})")
         
-        # Lista de matches
+        # Match list
         for idx, row in filtered_df.head(50).iterrows():
             status_color = {
-                'Confirmed': '🟢',
-                'Rejected': '🔴',
-                'Flagged': '🟡',
+                'Confirmed': '✅',
+                'Rejected': '❌',
+                'Flagged': '🚩',
                 'Unreviewed': '⚪'
             }
             
-            if st.button(
-                f"{status_color[row['review_status']]} {row['RAW_SUPPLIER'][:30]}...",
-                key=f"match_{idx}",
-                use_container_width=True
-            ):
+            button_label = f"{status_color[row['review_status']]} {row['RAW_SUPPLIER'][:35]}..."
+            
+            if st.button(button_label, key=f"match_{idx}", use_container_width=True):
                 st.session_state.current_index = idx
     
-    # Área principal de revisión
+    # Main review area
     if len(filtered_df) > 0:
         current_match = filtered_df.iloc[st.session_state.current_index]
         original_idx = df[df['id'] == current_match['id']].index[0]
         
-        # Botones de acción
+        # Review Match header
+        st.markdown("#### Review Match")
+        
+        # Action buttons
         col1, col2, col3, col4 = st.columns([3, 3, 3, 1])
         
         with col1:
@@ -272,8 +587,8 @@ with tab1:
         
         st.divider()
         
-        # Score y status
-        col1, col2, col3 = st.columns([1, 2, 2])
+        # Score and status
+        col1, col2 = st.columns([1, 4])
         with col1:
             score_pct = int(current_match['match_score'] * 100)
             st.markdown(f"### {score_pct}%")
@@ -288,64 +603,71 @@ with tab1:
             }
             decision = current_match['HITL_Decision'] if pd.notna(current_match['HITL_Decision']) else 'Unreviewed'
             st.markdown(f"### {status_emoji.get(decision, '⚪')} {decision}")
-            st.caption(f"Confidence: {current_match['confidence_level']}%")
-        
-        with col3:
-            if current_match['last_decision_by']:
-                st.markdown(f"**Last Decision By:** {current_match['last_decision_by']}")
-                st.caption(f"Date: {current_match['last_decision_date']}")
-            else:
-                st.markdown("**Status:** Not reviewed yet")
+            st.caption(f"Predicated Label | Confirmation Probability: {current_match['confidence_level']}%")
         
         st.divider()
         
-        # Detalles del match
-        col1, col2, col3 = st.columns(3)
+        # Match details
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.markdown("**Match Priority**")
-            priority_color = {'High': '🔴', 'Medium': '🟡', 'Low': '🟢'}
-            st.markdown(f"{priority_color[current_match['match_priority']]} {current_match['match_priority']}")
+            priority = current_match['match_priority']
+            priority_class = f"priority-{priority.lower()}"
+            st.markdown(f'<span class="{priority_class}">{priority}</span>', unsafe_allow_html=True)
         
         with col2:
             st.markdown("**Review Status**")
             st.markdown(f"{status_emoji.get(current_match['review_status'], '⚪')} {current_match['review_status']}")
         
         with col3:
-            st.markdown("**Match ID**")
-            st.markdown(f"#{current_match['id']}")
+            st.markdown("**Match At**")
+            if current_match['reviewed_at']:
+                st.markdown(current_match['reviewed_at'])
+            else:
+                st.markdown("Not reviewed yet")
+        
+        with col4:
+            st.markdown("**ER Score Table**")
+            st.markdown("🔵 Supplier Deduplication")
         
         st.divider()
         
-        # Comparación lado a lado
+        # Side by side comparison
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### 📤 Left Entity (Raw)")
-            st.markdown("**Source: Raw Supplier Data**")
+            st.markdown("#### 📤 Left Entity")
+            st.markdown(f"**{current_match['RAW_SUPPLIER']}**")
+            st.caption("[ERP Migration] Supplier")
             
             with st.container(border=True):
-                st.markdown("#### Properties")
-                st.markdown(f"**Raw Supplier Name:**")
-                st.markdown(f"# {current_match['RAW_SUPPLIER']}")
+                st.markdown("**Overview** | Properties")
                 st.divider()
-                st.markdown(f"**Match Score:** {current_match['match_score']}")
-                st.markdown(f"**Priority:** {current_match['match_priority']}")
-                st.markdown(f"**Record ID:** {current_match['id']}")
+                st.markdown("##### Properties")
+                
+                st.markdown(f"**NAICS Code:** {current_match['naics_code_raw']}")
+                st.markdown(f"**SIC Code:** {current_match['sic_code_raw']}")
+                st.markdown(f"**Website URL:** {current_match['website_url_raw']}")
+                st.markdown(f"**Short Description:**")
+                st.caption(current_match['description_raw'])
         
         with col2:
-            st.markdown("### 📥 Right Entity (Canonical)")
-            st.markdown("**Target: Canonical Master Data**")
+            st.markdown("#### 📥 Right Entity")
+            st.markdown(f"**{current_match['CANONICAL_NAME']}**")
+            st.caption("[ERP Migration] Supplier")
             
             with st.container(border=True):
-                st.markdown("#### Properties")
-                st.markdown(f"**Canonical Name:**")
-                st.markdown(f"# {current_match['CANONICAL_NAME']}")
+                st.markdown("**Overview** | Properties")
                 st.divider()
-                st.markdown(f"**Match Score:** {current_match['match_score']}")
-                st.markdown(f"**HITL Decision:** {current_match['HITL_Decision'] or 'Pending'}")
-                st.markdown(f"**Status:** {current_match['review_status']}")
+                st.markdown("##### Properties")
+                
+                st.markdown(f"**NAICS Code:** {current_match['naics_code_canonical']}")
+                st.markdown(f"**SIC Code:** {current_match['sic_code_canonical']}")
+                st.markdown(f"**Website URL:** {current_match['website_url_canonical']}")
+                st.markdown(f"**Short Description:**")
+                st.caption(current_match['description_canonical'])
         
-        # Navegación
+        # Navigation
         st.divider()
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
@@ -366,10 +688,10 @@ with tab1:
         st.info("No matches found with the current filters.")
 
 with tab2:
-    st.header("📊 Dataset View & Query")
+    st.markdown("### 📊 Dataset View & Query")
     
     # Query builder
-    st.subheader("🔍 Query Dataset")
+    st.markdown("#### 🔍 Query Dataset")
     
     col1, col2, col3 = st.columns(3)
     
@@ -391,10 +713,10 @@ with tab2:
             options=['High', 'Medium', 'Low']
         )
     
-    # Búsqueda por texto
+    # Text search
     query_text = st.text_input("🔎 Search in Raw Supplier", "")
     
-    # Aplicar queries
+    # Apply queries
     queried_df = df.copy()
     
     if query_canonical:
@@ -417,10 +739,10 @@ with tab2:
             queried_df['RAW_SUPPLIER'].str.contains(query_text, case=False, na=False)
         ]
     
-    # Mostrar resultados
-    st.subheader(f"Results: {len(queried_df)} matches")
+    # Show results
+    st.markdown(f"#### Results: {len(queried_df)} matches")
     
-    # Configurar columnas a mostrar
+    # Column selection
     columns_to_show = st.multiselect(
         "Select columns to display",
         options=list(queried_df.columns),
@@ -435,7 +757,7 @@ with tab2:
             height=400
         )
     
-    # Estadísticas del query
+    # Statistics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Records", len(queried_df))
@@ -444,156 +766,6 @@ with tab2:
         st.metric("Confirmed", confirmed_count)
     with col3:
         rejected_count = len(queried_df[queried_df['HITL_Decision'] == 'Rejected'])
-        st.metric("Rejected", rejected_count)
-    with col4:
-        avg_score = queried_df['match_score'].mean()
-        st.metric("Avg Score", f"{avg_score:.2%}")
-    
-    # Exportar resultados
-    st.divider()
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📥 Export Query Results"):
-            csv = queried_df.to_csv(index=False)
-            st.download_button(
-                label="Download CSV",
-                data=csv,
-                file_name=f"query_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
-            )
-    
-    with col2:
-        if st.button("📥 Export Full Dataset"):
-            csv = df.to_csv(index=False)
-            st.download_button(
-                label="Download Full Dataset CSV",
-                data=csv,
-                file_name=f"full_dataset_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
-            )
+        st.metric("Rejected", rejected_count
 
-with tab3:
-    st.header("📜 Change History Log")
-    
-    if st.session_state.change_log:
-        # Filtros para el log
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            users = list(set([log['user'] for log in st.session_state.change_log]))
-            filter_user = st.multiselect("Filter by User", options=users, default=users)
-        
-        with col2:
-            decisions = list(set([log['new_decision'] for log in st.session_state.change_log]))
-            filter_decision = st.multiselect("Filter by Decision", options=decisions, default=decisions)
-        
-        # Crear DataFrame del log
-        log_df = pd.DataFrame(st.session_state.change_log)
-        
-        # Aplicar filtros
-        log_df = log_df[
-            (log_df['user'].isin(filter_user)) &
-            (log_df['new_decision'].isin(filter_decision))
-        ]
-        
-        # Ordenar por timestamp descendente
-        log_df = log_df.sort_values('timestamp', ascending=False)
-        
-        st.subheader(f"📊 Total Changes: {len(log_df)}")
-        
-        # Mostrar log en formato tabla
-        for idx, row in log_df.iterrows():
-            with st.container(border=True):
-                col1, col2, col3 = st.columns([2, 3, 2])
-                
-                with col1:
-                    st.markdown(f"**🕐 {row['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}**")
-                    st.caption(f"By: {row['user']}")
-                
-                with col2:
-                    st.markdown(f"**Match #{row['match_id']}**")
-                    st.markdown(f"`{row['raw_supplier']}` → `{row['canonical_name']}`")
-                
-                with col3:
-                    old = row['old_decision'] if pd.notna(row['old_decision']) else "Unreviewed"
-                    new = row['new_decision']
-                    st.markdown(f"**{old}** → **{new}**")
-                    
-                    if new == 'Confirmed':
-                        st.success("Confirmed")
-                    elif new == 'Rejected':
-                        st.error("Rejected")
-                    elif new == 'Flagged':
-                        st.warning("Flagged")
-        
-        # Exportar log
-        st.divider()
-        if st.button("📥 Export Change Log"):
-            csv = log_df.to_csv(index=False)
-            st.download_button(
-                label="Download Change Log CSV",
-                data=csv,
-                file_name=f"change_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
-            )
-    else:
-        st.info("No changes recorded yet. Start reviewing matches to see the change history.")
-
-with tab4:
-    st.header("📈 Analytics Dashboard")
-    
-    df_analytics = st.session_state.matches_df
-    
-    # Métricas generales
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        total_matches = len(df_analytics)
-        st.metric("Total Matches", total_matches)
-    
-    with col2:
-        reviewed = len(df_analytics[df_analytics['HITL_Decision'].notna()])
-        review_pct = (reviewed / total_matches * 100) if total_matches > 0 else 0
-        st.metric("Reviewed", f"{reviewed} ({review_pct:.1f}%)")
-    
-    with col3:
-        avg_score = df_analytics['match_score'].mean()
-        st.metric("Avg Match Score", f"{avg_score:.2%}")
-    
-    with col4:
-        high_priority = len(df_analytics[df_analytics['match_priority'] == 'High'])
-        st.metric("High Priority", high_priority)
-    
-    st.divider()
-    
-    # Análisis por Canonical Name
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📊 Matches by Canonical Name")
-        canonical_counts = df_analytics['CANONICAL_NAME'].value_counts()
-        st.bar_chart(canonical_counts)
-    
-    with col2:
-        st.subheader("✅ Decision Distribution")
-        decision_counts = df_analytics['HITL_Decision'].value_counts()
-        st.bar_chart(decision_counts)
-    
-    st.divider()
-    
-    # Tabla de resumen por Canonical
-    st.subheader("📋 Summary by Canonical Name")
-    
-    summary = df_analytics.groupby('CANONICAL_NAME').agg({
-        'id': 'count',
-        'match_score': 'mean',
-        'HITL_Decision': lambda x: (x == 'Confirmed').sum()
-    }).reset_index()
-    
-    summary.columns = ['Canonical Name', 'Total Matches', 'Avg Score', 'Confirmed']
-    summary['Avg Score'] = summary['Avg Score'].round(3)
-    summary = summary.sort_values('Total Matches', ascending=False)
-    
-    st.dataframe(summary, use_container_width=True)
 
