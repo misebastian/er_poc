@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for light theme matching the image
+# Custom CSS for dark theme with better readability
 st.markdown("""
 <style>
     /* Remove default padding */
@@ -20,199 +20,279 @@ st.markdown("""
         padding-right: 3rem;
     }
     
-    /* Main background */
+    /* Main background - dark */
     .stApp {
-        background-color: #f8f9fa;
+        background-color: #0e1117;
+        color: #fafafa;
     }
     
-    /* Sidebar styling - dark theme like image */
+    /* All text white by default */
+    * {
+        color: #fafafa !important;
+    }
+    
+    /* Sidebar styling - darker */
     [data-testid="stSidebar"] {
-        background-color: #1e1e1e;
+        background-color: #1a1d24;
+        border-right: 1px solid #2d3139;
     }
     
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] h4,
-    [data-testid="stSidebar"] h5,
-    [data-testid="stSidebar"] h6,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] div {
-        color: white !important;
-    }
-    
-    /* Sidebar buttons - dark with white text */
+    /* Sidebar buttons */
     [data-testid="stSidebar"] .stButton > button {
-        background-color: #2d2d2d;
-        color: white !important;
+        background-color: #2d3139;
+        color: #fafafa !important;
         border: none;
         text-align: left;
-        font-size: 13px;
-        padding: 8px 12px;
-        border-radius: 4px;
+        font-size: 14px;
+        padding: 10px 14px;
+        border-radius: 6px;
         width: 100%;
+        transition: all 0.2s;
     }
     
     [data-testid="stSidebar"] .stButton > button:hover {
-        background-color: #3d3d3d;
+        background-color: #3d4149;
+        border-left: 3px solid #4a9eff;
     }
     
-    /* Sidebar input text */
+    /* Sidebar input */
     [data-testid="stSidebar"] input {
-        background-color: #2d2d2d !important;
-        color: white !important;
+        background-color: #2d3139 !important;
+        color: #fafafa !important;
         border: 1px solid #404040 !important;
+        font-size: 14px !important;
     }
     
-    /* Main action buttons */
+    /* Main action buttons - larger and more prominent */
     div[data-testid="column"] > div > div > div > button {
-        height: 45px;
-        font-size: 14px;
-        font-weight: 500;
-        border-radius: 4px;
+        height: 50px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 6px;
         border: none;
+        transition: all 0.2s;
     }
     
-    /* Confirm button - green */
+    /* Confirm button - bright green */
     button[kind="primary"] {
-        background-color: #4caf50 !important;
+        background-color: #10b981 !important;
         color: white !important;
     }
     
-    /* Metrics */
+    button[kind="primary"]:hover {
+        background-color: #059669 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    
+    /* Flag button - orange */
+    button[key="flag_btn"] {
+        background-color: #f59e0b !important;
+        color: white !important;
+    }
+    
+    button[key="flag_btn"]:hover {
+        background-color: #d97706 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+    
+    /* Reject button - red */
+    button[key="reject_btn"] {
+        background-color: #ef4444 !important;
+        color: white !important;
+    }
+    
+    button[key="reject_btn"]:hover {
+        background-color: #dc2626 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+    
+    /* Metrics - larger and more visible */
     [data-testid="stMetricValue"] {
-        font-size: 20px;
-        font-weight: 600;
-        color: #1a1a1a !important;
+        font-size: 32px !important;
+        font-weight: 700 !important;
+        color: #fafafa !important;
     }
     
     [data-testid="stMetricLabel"] {
-        font-size: 13px;
-        color: #666 !important;
+        font-size: 14px !important;
+        color: #9ca3af !important;
+        font-weight: 500 !important;
     }
     
-    [data-testid="metric-container"] {
-        color: #1a1a1a !important;
-    }
-    
-    [data-testid="metric-container"] * {
-        color: inherit !important;
-    }
-    
-    /* Tabs */
+    /* Tabs - modern dark style */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0px;
+        gap: 8px;
         background-color: transparent;
-        border-bottom: 1px solid #e0e0e0;
+        border-bottom: 2px solid #2d3139;
     }
     
     .stTabs [data-baseweb="tab"] {
         background-color: transparent;
-        border-radius: 0px;
-        color: #666;
-        font-weight: 500;
-        padding: 10px 16px;
-        border-bottom: 2px solid transparent;
+        border-radius: 6px 6px 0 0;
+        color: #9ca3af;
+        font-weight: 600;
+        padding: 12px 20px;
+        font-size: 15px;
+        border-bottom: 3px solid transparent;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: transparent;
-        color: #1976d2;
-        border-bottom: 2px solid #1976d2;
+        background-color: #1e293b;
+        color: #3b82f6;
+        border-bottom: 3px solid #3b82f6;
     }
     
-    /* Container boxes */
+    /* Container boxes - dark cards */
     div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] {
-        background-color: white;
+        background-color: #1a1d24;
         border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 20px;
+        border: 1px solid #2d3139;
     }
     
-    /* Make sure text in containers is dark */
-    div[data-testid="stVerticalBlock"] h1,
-    div[data-testid="stVerticalBlock"] h2,
-    div[data-testid="stVerticalBlock"] h3,
-    div[data-testid="stVerticalBlock"] h4,
-    div[data-testid="stVerticalBlock"] p,
-    div[data-testid="stVerticalBlock"] span,
-    div[data-testid="stVerticalBlock"] label {
-        color: #1a1a1a !important;
+    /* Headers - larger and clearer */
+    h1 {
+        color: #fafafa !important;
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
     }
     
-    /* Text styling */
-    h1, h2, h3, h4, h5, h6 {
-        color: #1a1a1a !important;
+    h2 {
+        color: #fafafa !important;
+        font-size: 2rem !important;
+        font-weight: 600 !important;
     }
     
-    p, span, label, div {
-        color: #333333 !important;
+    h3 {
+        color: #fafafa !important;
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
     }
     
-    /* Captions */
-    .caption {
-        color: #666666 !important;
+    h4 {
+        color: #fafafa !important;
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
     }
     
-    [data-testid="stCaptionContainer"] {
-        color: #666666 !important;
+    /* Description text - LARGER for easy reading */
+    .caption, [data-testid="stCaptionContainer"], [data-testid="stMarkdownContainer"] p {
+        font-size: 16px !important;
+        line-height: 1.6 !important;
+        color: #d1d5db !important;
     }
     
-    /* Priority badges */
+    /* Property labels - clear and readable */
+    strong {
+        color: #e5e7eb !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Priority badges - high contrast */
     .priority-badge-high {
-        background-color: #ffebee;
-        color: #c62828;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
+        background-color: #7f1d1d;
+        color: #fca5a5;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
         display: inline-block;
+        border: 1px solid #991b1b;
     }
     
     .priority-badge-medium {
-        background-color: #fff8e1;
-        color: #f57c00;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
+        background-color: #78350f;
+        color: #fcd34d;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
         display: inline-block;
+        border: 1px solid #92400e;
     }
     
     .priority-badge-low {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
+        background-color: #064e3b;
+        color: #6ee7b7;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
         display: inline-block;
+        border: 1px solid #065f46;
     }
     
-    /* Status badge */
+    /* Status badges - high contrast */
     .status-badge {
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 700;
         display: inline-block;
     }
     
     .status-confirmed {
-        background-color: #e8f5e9;
-        color: #2e7d32;
+        background-color: #064e3b;
+        color: #6ee7b7;
+        border: 1px solid #065f46;
     }
     
     .status-rejected {
-        background-color: #ffebee;
-        color: #c62828;
+        background-color: #7f1d1d;
+        color: #fca5a5;
+        border: 1px solid #991b1b;
     }
     
     .status-flagged {
-        background-color: #fff8e1;
-        color: #f57c00;
+        background-color: #78350f;
+        color: #fcd34d;
+        border: 1px solid #92400e;
+    }
+    
+    /* Dividers */
+    hr {
+        border-color: #2d3139 !important;
+        margin: 1.5rem 0 !important;
+    }
+    
+    /* Input fields */
+    input, textarea, select {
+        background-color: #1a1d24 !important;
+        color: #fafafa !important;
+        border: 1px solid #2d3139 !important;
+        font-size: 15px !important;
+    }
+    
+    /* Dataframes */
+    [data-testid="stDataFrame"] {
+        font-size: 14px !important;
+    }
+    
+    /* Score percentage - HUGE and prominent */
+    .score-display {
+        font-size: 4rem !important;
+        font-weight: 900 !important;
+        color: #3b82f6 !important;
+        line-height: 1 !important;
+    }
+    
+    /* Entity names - prominent */
+    .entity-name {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        color: #fafafa !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Property values - larger */
+    .property-value {
+        font-size: 16px !important;
+        color: #d1d5db !important;
+        line-height: 1.8 !important;
     }
     
     /* Hide streamlit branding */
@@ -703,7 +783,7 @@ with tab1:
         col1, col2 = st.columns([1, 3])
         with col1:
             score_pct = int(current_match['match_score'] * 100)
-            st.markdown(f"# {score_pct}%")
+            st.markdown(f"<div class='score-display'>{score_pct}%</div>", unsafe_allow_html=True)
             st.caption("Overall Score")
         
         with col2:
@@ -719,6 +799,7 @@ with tab1:
                 st.markdown(f'<div class="status-badge {status_class}">{decision}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f"### ⚪ {decision}")
+            st.markdown("")
             st.caption(f"Predicated Label | Confirmation Probability: {current_match['confidence_level']}%")
         
         st.markdown("---")
@@ -753,33 +834,39 @@ with tab1:
         
         with col1:
             st.markdown("### 📤 Left Entity")
-            st.markdown(f"**{current_match['RAW_SUPPLIER']}**")
+            st.markdown(f"<div class='entity-name'>{current_match['RAW_SUPPLIER']}</div>", unsafe_allow_html=True)
             st.caption("🔵 [ERP Migration] Supplier")
+            st.markdown("")
             
             with st.container():
                 st.markdown("**Overview** | Properties")
                 st.markdown("---")
                 st.markdown("#### Properties")
-                st.markdown(f"**NAICS Code:** {current_match['naics_code_raw']}")
-                st.markdown(f"**SIC Code:** {current_match['sic_code_raw']}")
-                st.markdown(f"**Website URL:** {current_match['website_url_raw']}")
-                st.markdown(f"**Short Description:**")
-                st.caption(current_match['description_raw'])
+                st.markdown("")
+                st.markdown(f"<div class='property-value'><strong>NAICS Code:</strong> {current_match['naics_code_raw']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='property-value'><strong>SIC Code:</strong> {current_match['sic_code_raw']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='property-value'><strong>Website URL:</strong> {current_match['website_url_raw']}</div>", unsafe_allow_html=True)
+                st.markdown("")
+                st.markdown("**Short Description:**")
+                st.markdown(f"<div class='property-value' style='font-size: 17px; line-height: 1.7;'>{current_match['description_raw']}</div>", unsafe_allow_html=True)
         
         with col2:
             st.markdown("### 📥 Right Entity")
-            st.markdown(f"**{current_match['CANONICAL_NAME']}**")
+            st.markdown(f"<div class='entity-name'>{current_match['CANONICAL_NAME']}</div>", unsafe_allow_html=True)
             st.caption("🔵 [ERP Migration] Supplier")
+            st.markdown("")
             
             with st.container():
                 st.markdown("**Overview** | Properties")
                 st.markdown("---")
                 st.markdown("#### Properties")
-                st.markdown(f"**NAICS Code:** {current_match['naics_code_canonical']}")
-                st.markdown(f"**SIC Code:** {current_match['sic_code_canonical']}")
-                st.markdown(f"**Website URL:** {current_match['website_url_canonical']}")
-                st.markdown(f"**Short Description:**")
-                st.caption(current_match['description_canonical'])
+                st.markdown("")
+                st.markdown(f"<div class='property-value'><strong>NAICS Code:</strong> {current_match['naics_code_canonical']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='property-value'><strong>SIC Code:</strong> {current_match['sic_code_canonical']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='property-value'><strong>Website URL:</strong> {current_match['website_url_canonical']}</div>", unsafe_allow_html=True)
+                st.markdown("")
+                st.markdown("**Short Description:**")
+                st.markdown(f"<div class='property-value' style='font-size: 17px; line-height: 1.7;'>{current_match['description_canonical']}</div>", unsafe_allow_html=True)
         
         # Navigation
         st.markdown("---")
@@ -1030,6 +1117,7 @@ with tab4:
     bu_diversity = bu_diversity.sort_values('Unique NAICS Codes', ascending=False)
     
     st.dataframe(bu_diversity, use_container_width=True)
+
 
 
 
