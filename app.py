@@ -28,10 +28,18 @@ st.markdown("""
     /* Sidebar styling - dark theme like image */
     [data-testid="stSidebar"] {
         background-color: #1e1e1e;
-        color: white;
     }
     
-    [data-testid="stSidebar"] * {
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] h5,
+    [data-testid="stSidebar"] h6,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div {
         color: white !important;
     }
     
@@ -49,6 +57,13 @@ st.markdown("""
     
     [data-testid="stSidebar"] .stButton > button:hover {
         background-color: #3d3d3d;
+    }
+    
+    /* Sidebar input text */
+    [data-testid="stSidebar"] input {
+        background-color: #2d2d2d !important;
+        color: white !important;
+        border: 1px solid #404040 !important;
     }
     
     /* Main action buttons */
@@ -70,12 +85,20 @@ st.markdown("""
     [data-testid="stMetricValue"] {
         font-size: 20px;
         font-weight: 600;
-        color: #333;
+        color: #1a1a1a !important;
     }
     
     [data-testid="stMetricLabel"] {
         font-size: 13px;
-        color: #666;
+        color: #666 !important;
+    }
+    
+    [data-testid="metric-container"] {
+        color: #1a1a1a !important;
+    }
+    
+    [data-testid="metric-container"] * {
+        color: inherit !important;
     }
     
     /* Tabs */
@@ -108,9 +131,33 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
+    /* Make sure text in containers is dark */
+    div[data-testid="stVerticalBlock"] h1,
+    div[data-testid="stVerticalBlock"] h2,
+    div[data-testid="stVerticalBlock"] h3,
+    div[data-testid="stVerticalBlock"] h4,
+    div[data-testid="stVerticalBlock"] p,
+    div[data-testid="stVerticalBlock"] span,
+    div[data-testid="stVerticalBlock"] label {
+        color: #1a1a1a !important;
+    }
+    
     /* Text styling */
-    h1, h2, h3 {
-        color: #1a1a1a;
+    h1, h2, h3, h4, h5, h6 {
+        color: #1a1a1a !important;
+    }
+    
+    p, span, label, div {
+        color: #333333 !important;
+    }
+    
+    /* Captions */
+    .caption {
+        color: #666666 !important;
+    }
+    
+    [data-testid="stCaptionContainer"] {
+        color: #666666 !important;
     }
     
     /* Priority badges */
